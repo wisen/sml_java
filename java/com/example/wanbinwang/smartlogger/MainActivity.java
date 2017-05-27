@@ -31,30 +31,34 @@ public class MainActivity extends Activity {
     private Button btn_systrace;
     private Button btn_logcat;
     private Button btn_all;
-    private static LocalSocket smldSocket;
-    private static OutputStream smldOutputStream;
-    private static InputStream smldInputStream;
+    private static LocalSocket smldCmdSocket;
+    private static OutputStream smldCmdOutputStream;
+    private static LocalSocket smldRspSocket;
+    private static OutputStream smldRspOutputStream;
+    //private static InputStream smldInputStream;
     private boolean isprogressfinish = false;
     private ProgressDialog proDialog = null;
 
     static final byte ATM_START_SYSTRACE = 0;
-    static final byte ATM_FINISH_SYSTRACE = 1;
-    static final byte ATM_START_BGREPORT = 2;
-    static final byte ATM_FINISH_BGREPORT = 3;
-    static final byte ATM_START_LOGCAT = 4;
-    static final byte ATM_FINISH_LOGCAT = 5;
-    static final byte ATM_START_ALL = 6;
-    static final byte ATM_FINISH_ALL = 7;
-    static final byte ATM_MAX_CMD = 8;
+    static final byte ATM_START_BGREPORT = 1;
+    static final byte ATM_START_LOGCAT = 2;
+    static final byte ATM_START_ALL = 3;
+    static final byte ATM_MAX_CMD = 4;
+
+    static final byte ATM_FINISH_SYSTRACE = 0;
+    static final byte ATM_FINISH_BGREPORT = 1;
+    static final byte ATM_FINISH_LOGCAT = 2;
+    static final byte ATM_FINISH_ALL = 3;
+    static final byte ATM_MAX_RSP = 4;
     private int isfinish_all = 0;
 
-    private void write_cmd(byte CMD, int info){
+    private void write_rsp(byte CMD, int info){
         ByteBuffer buf = ByteBuffer.allocate(2 * 4);
         buf.putInt(CMD);
         buf.putInt(info);
         for (int i = 0; i < 3; i++) {
-            if (smldSocket == null) {
-                if (openSmldSocket() == false) {
+            if (smldRspSocket == null) {
+                if (openSmldRspSocket() == false) {
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException ie) {
@@ -64,17 +68,48 @@ public class MainActivity extends Activity {
             }
 
             try {
-                smldOutputStream.write(buf.array(), 0, buf.position());
+                smldRspOutputStream.write(buf.array(), 0, buf.position());
                 return;
             } catch (IOException ex) {
                 Log.d(TAG, "Error writing to smld socket");
 
                 try {
-                    smldSocket.close();
+                    smldRspSocket.close();
                 } catch (IOException ex2) {
                 }
 
-                smldSocket = null;
+                smldRspSocket = null;
+            }
+        }
+    }
+
+    private void write_cmd(byte CMD, int info){
+        ByteBuffer buf = ByteBuffer.allocate(2 * 4);
+        buf.putInt(CMD);
+        buf.putInt(info);
+        for (int i = 0; i < 3; i++) {
+            if (smldCmdSocket == null) {
+                if (openSmldCmdSocket() == false) {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException ie) {
+                    }
+                    continue;
+                }
+            }
+
+            try {
+                smldCmdOutputStream.write(buf.array(), 0, buf.position());
+                return;
+            } catch (IOException ex) {
+                Log.d(TAG, "Error writing to smld socket");
+
+                try {
+                    smldCmdSocket.close();
+                } catch (IOException ex2) {
+                }
+
+                smldCmdSocket = null;
             }
         }
     }
@@ -92,11 +127,11 @@ public class MainActivity extends Activity {
                     isprogressfinish = true;
 
                     if (isfinish_all == 3){
-                        write_cmd(ATM_FINISH_ALL, 0);
+                        write_rsp(ATM_FINISH_ALL, 0);
                     }
 
-                    if(smldOutputStream!=null){
-                        write_cmd(ATM_FINISH_BGREPORT, 0);
+                    if(smldCmdOutputStream!=null){
+                        write_rsp(ATM_FINISH_BGREPORT, 0);
                         isfinish_all += 1;
                     }
                 } else if (action_logcat_finish.equals(intent.getAction())){
@@ -104,11 +139,11 @@ public class MainActivity extends Activity {
                     isprogressfinish = true;
 
                     if (isfinish_all == 3){
-                        write_cmd(ATM_FINISH_ALL, 0);
+                        write_rsp(ATM_FINISH_ALL, 0);
                     }
 
-                    if(smldOutputStream!=null){
-                        write_cmd(ATM_FINISH_LOGCAT, 0);
+                    if(smldCmdOutputStream!=null){
+                        write_rsp(ATM_FINISH_LOGCAT, 0);
                         isfinish_all += 1;
                     }
                 } else if (action_systrace_finish.equals(intent.getAction())){
@@ -116,11 +151,11 @@ public class MainActivity extends Activity {
                     isprogressfinish = true;
 
                     if (isfinish_all == 3){
-                        write_cmd(ATM_FINISH_ALL, 0);
+                        write_rsp(ATM_FINISH_ALL, 0);
                     }
 
-                    if(smldOutputStream!=null){
-                        write_cmd(ATM_FINISH_SYSTRACE, 0);
+                    if(smldCmdOutputStream!=null){
+                        write_rsp(ATM_FINISH_SYSTRACE, 0);
                         isfinish_all += 1;
                     }
                 }
@@ -178,17 +213,35 @@ public class MainActivity extends Activity {
 
     }
 
-    private static boolean openSmldSocket() {
+    private static boolean openSmldCmdSocket() {
         try {
-            smldSocket = new LocalSocket(LocalSocket.SOCKET_SEQPACKET);
-            smldSocket.connect(
-                    new LocalSocketAddress("atrace_monitor_sk",
+            smldCmdSocket = new LocalSocket(LocalSocket.SOCKET_SEQPACKET);
+            smldCmdSocket.connect(
+                    new LocalSocketAddress("atrace_monitor_cmd_sk",
                             LocalSocketAddress.Namespace.RESERVED));
-            smldOutputStream = smldSocket.getOutputStream();
-            smldInputStream = smldSocket.getInputStream();
+            smldCmdOutputStream = smldCmdSocket.getOutputStream();
+            //smldInputStream = smldCmdSocket.getInputStream();
         } catch (IOException ex) {
             Log.d(TAG, "smld daemon socket open failed");
-            smldSocket = null;
+            smldCmdSocket = null;
+            ex.printStackTrace();
+            return false;
+        }
+
+        return true;
+    }
+
+    private static boolean openSmldRspSocket() {
+        try {
+            smldRspSocket = new LocalSocket(LocalSocket.SOCKET_SEQPACKET);
+            smldRspSocket.connect(
+                    new LocalSocketAddress("atrace_monitor_rsp_sk",
+                            LocalSocketAddress.Namespace.RESERVED));
+            smldRspOutputStream = smldRspSocket.getOutputStream();
+            //smldInputStream = smldRspSocket.getInputStream();
+        } catch (IOException ex) {
+            Log.d(TAG, "smld daemon socket open failed");
+            smldRspSocket = null;
             ex.printStackTrace();
             return false;
         }
