@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">smartlogger</string>
+    <string name="btn_bugreport_txt">BUGREPORT</string>
+    <string name="btn_systrace_txt">SYSTRACE</string>
+    <string name="btn_logcat_txt">LOGCAT</string>
+    <string name="btn_all_txt">ALL</string>
+</resources>
