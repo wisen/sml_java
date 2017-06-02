@@ -4,4 +4,5 @@
     <string name="btn_systrace_txt">SYSTRACE</string>
     <string name="btn_logcat_txt">LOGCAT</string>
     <string name="btn_all_txt">ALL</string>
+    <string name="btn_wrsk_txt">ENABLE WSK</string>
 </resources>

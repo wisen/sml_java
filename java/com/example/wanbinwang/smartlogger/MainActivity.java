@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.LocalServerSocket;
 import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
 import android.support.v7.app.AppCompatActivity;
@@ -14,6 +15,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
+import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -31,8 +33,10 @@ public class MainActivity extends Activity {
     private Button btn_systrace;
     private Button btn_logcat;
     private Button btn_all;
+    private Button btn_wrsk;
     private static LocalSocket smldCmdSocket;
     private static OutputStream smldCmdOutputStream;
+    private static InputStream smldCmdInputStream;
     private static LocalSocket smldRspSocket;
     private static OutputStream smldRspOutputStream;
     //private static InputStream smldInputStream;
@@ -43,7 +47,9 @@ public class MainActivity extends Activity {
     static final byte ATM_START_BGREPORT = 1;
     static final byte ATM_START_LOGCAT = 2;
     static final byte ATM_START_ALL = 3;
-    static final byte ATM_MAX_CMD = 4;
+    static final byte ATM_GET_WRSK = 4;
+    static final byte ATM_ENABLE_WRSK = 5;
+    static final byte ATM_MAX_CMD = 6;
 
     static final byte ATM_FINISH_SYSTRACE = 0;
     static final byte ATM_FINISH_BGREPORT = 1;
@@ -51,6 +57,12 @@ public class MainActivity extends Activity {
     static final byte ATM_FINISH_ALL = 3;
     static final byte ATM_MAX_RSP = 4;
     private int isfinish_all = 0;
+
+    private LocalSocket receiver;
+    private LocalServerSocket lss;
+    private static final int BUFFER_SIZE = 8;
+    private final String JSsocketName = "atrace_monitor_wr_sk";
+    private boolean isexit = false;
 
     private void write_rsp(byte CMD, int info){
         ByteBuffer buf = ByteBuffer.allocate(2 * 4);
@@ -211,6 +223,15 @@ public class MainActivity extends Activity {
             }
         });
 
+        btn_wrsk = (Button) findViewById(R.id.btn_wrsk);
+        btn_wrsk.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                write_cmd(ATM_ENABLE_WRSK, 0);
+            }
+        });
+
+        new Thread (local_receive).start();
     }
 
     private static boolean openSmldCmdSocket() {
@@ -220,7 +241,7 @@ public class MainActivity extends Activity {
                     new LocalSocketAddress("atrace_monitor_cmd_sk",
                             LocalSocketAddress.Namespace.RESERVED));
             smldCmdOutputStream = smldCmdSocket.getOutputStream();
-            //smldInputStream = smldCmdSocket.getInputStream();
+            smldCmdInputStream = smldCmdSocket.getInputStream();
         } catch (IOException ex) {
             Log.d(TAG, "smld daemon socket open failed");
             smldCmdSocket = null;
@@ -259,5 +280,91 @@ public class MainActivity extends Activity {
             }
         };
         thread.start();
+    }
+
+    Thread local_receive = new Thread(){
+        public void run(){
+
+            Log.d(TAG, "local_receive run.....");
+
+            try {
+                lss = new LocalServerSocket(JSsocketName);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            try {
+                receiver = lss.accept();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+
+            try {
+                receiver.setReceiveBufferSize(4);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            int receiveLen = 16;
+            InputStream m_Rece = null;
+
+            try {
+                m_Rece = receiver.getInputStream();
+                byte[] data;
+                while(true) {
+                    if (receiveLen > 0) {
+                        data = new byte[receiveLen];
+                        m_Rece.read(data);
+                        Log.d(TAG, "receiveLen: " + receiveLen + " --- "+new String(data) + " ---");
+                        Log.d(TAG, "cmd = " + byte2int(data));
+                    }
+                    Thread.sleep(500);
+                    if(isexit){
+                        m_Rece.close();
+                        receiver.close();
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+        }
+    };
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        isexit = true;
+
+        if (receiver != null) try {
+            receiver.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        if(lss != null) try {
+            lss.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static byte[] int2byte(int res) {
+        byte[] targets = new byte[4];
+
+        targets[0] = (byte) (res & 0xff);
+        targets[1] = (byte) ((res >> 8) & 0xff);
+        targets[2] = (byte) ((res >> 16) & 0xff);
+        targets[3] = (byte) (res >>> 24);
+        return targets;
+    }
+
+    public static int byte2int(byte[] res) {
+
+        int targets = (res[0] & 0xff) | ((res[1] << 8) & 0xff00) | ((res[2] << 24) >>> 8) | (res[3] << 24);
+        return targets;
     }
 }
