@@ -53,4 +53,22 @@
         android:layout_marginTop="28dp"
         android:id="@+id/btn_wrsk" />
 
+    <Button
+        android:text="@string/btn_enable_atrace_txt"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/btn_logcat"
+		android:layout_alignStart="@+id/btn_all"
+        android:layout_marginTop="28dp"
+        android:id="@+id/btn_enable_atrace" />
+
+    <Button
+        android:text="@string/btn_reinitlogcat_txt"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/btn_wrsk"
+		android:layout_alignStart="@+id/btn_wrsk"
+        android:layout_marginTop="28dp"
+        android:id="@+id/btn_reinitlogcat" />
+
 </RelativeLayout>

@@ -34,6 +34,8 @@ public class MainActivity extends Activity {
     private Button btn_logcat;
     private Button btn_all;
     private Button btn_wrsk;
+    private Button btn_enable_atrace;
+    private Button btn_reinit_logcat;
     private static LocalSocket smldCmdSocket;
     private static OutputStream smldCmdOutputStream;
     private static InputStream smldCmdInputStream;
@@ -43,13 +45,14 @@ public class MainActivity extends Activity {
     private boolean isprogressfinish = false;
     private ProgressDialog proDialog = null;
 
-    static final byte ATM_START_SYSTRACE = 0;
-    static final byte ATM_START_BGREPORT = 1;
-    static final byte ATM_START_LOGCAT = 2;
-    static final byte ATM_START_ALL = 3;
-    static final byte ATM_GET_WRSK = 4;
-    static final byte ATM_ENABLE_WRSK = 5;
-    static final byte ATM_MAX_CMD = 6;
+    static final byte ATM_ENABLE_ATRACE = 0;
+    static final byte ATM_START_SYSTRACE = 1;
+    static final byte ATM_START_BGREPORT = 2;
+    static final byte ATM_START_LOGCAT = 3;
+    static final byte ATM_START_ALL = 4;
+    static final byte ATM_REINIT_LOGCAT = 5;
+    static final byte ATM_ENABLE_WRSK = 6;
+    static final byte ATM_MAX_CMD = 7;
 
     static final byte ATM_FINISH_SYSTRACE = 0;
     static final byte ATM_FINISH_BGREPORT = 1;
@@ -220,6 +223,22 @@ public class MainActivity extends Activity {
                 write_cmd(ATM_START_ALL, 0);
                 isprogressfinish = true;
                 show_progressDialog("all log capturing...");
+            }
+        });
+
+        btn_enable_atrace = (Button) findViewById(R.id.btn_enable_atrace);
+        btn_enable_atrace.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                write_cmd(ATM_ENABLE_ATRACE, 0);
+            }
+        });
+
+        btn_reinit_logcat = (Button) findViewById(R.id.btn_reinitlogcat);
+        btn_reinit_logcat.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                write_cmd(ATM_REINIT_LOGCAT, 0);
             }
         });
 
