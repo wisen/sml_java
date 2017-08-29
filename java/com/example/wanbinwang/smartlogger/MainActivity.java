@@ -36,6 +36,7 @@ public class MainActivity extends Activity {
     private Button btn_wrsk;
     private Button btn_enable_atrace;
     private Button btn_reinit_logcat;
+    private Button btn_set_timeout;
     private static LocalSocket smldCmdSocket;
     private static OutputStream smldCmdOutputStream;
     private static InputStream smldCmdInputStream;
@@ -52,7 +53,9 @@ public class MainActivity extends Activity {
     static final byte ATM_START_ALL = 4;
     static final byte ATM_REINIT_LOGCAT = 5;
     static final byte ATM_ENABLE_WRSK = 6;
-    static final byte ATM_MAX_CMD = 7;
+    static final byte ATM_SWITCH_ATRACE = 7;
+    static final byte ATM_SET_TIMEOUT = 8;
+    static final byte ATM_MAX_CMD = 9;
 
     static final byte ATM_FINISH_SYSTRACE = 0;
     static final byte ATM_FINISH_BGREPORT = 1;
@@ -247,6 +250,14 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View view) {
                 write_cmd(ATM_ENABLE_WRSK, 0);
+            }
+        });
+
+	btn_set_timeout = (Button) findViewById(R.id.btn_settimeout);
+       btn_set_timeout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                write_cmd(ATM_SET_TIMEOUT, 30);
             }
         });
 

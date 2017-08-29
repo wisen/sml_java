@@ -7,4 +7,5 @@
     <string name="btn_wrsk_txt">ENABLE WSK</string>
     <string name="btn_enable_atrace_txt">ENABLE ATRACE</string>
     <string name="btn_reinitlogcat_txt">REINIT LOGCAT</string>
+    <string name="btn_settimeout_txt">SET TIMEOUT</string>
 </resources>

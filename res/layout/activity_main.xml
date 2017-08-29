@@ -71,4 +71,13 @@
         android:layout_marginTop="28dp"
         android:id="@+id/btn_reinitlogcat" />
 
+    <Button
+        android:text="@string/btn_settimeout_txt"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/btn_wrsk"
+		android:layout_alignStart="@+id/btn_enable_atrace"
+        android:layout_marginTop="28dp"
+        android:id="@+id/btn_settimeout" />
+
 </RelativeLayout>
